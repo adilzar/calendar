@@ -1,0 +1,151 @@
+version: "3.9"
+services:
+  mysql:
+    container_name: calendar_mysql
+    platform: linux/x86_64
+    image: mysql:5.7
+    environment:
+      - MYSQL_USER=calendar
+      - MYSQL_PASSWORD=example
+      - MYSQL_DATABASE=account
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "mysql" ,"account" ]
+      timeout: 45s
+      interval: 3s
+      retries: 30
+    networks:
+      - calendar_net
+    volumes:
+      - mysql_data:/var/lib/mysql
+  mongo:
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: [ "CMD", "mongo", "--eval", "'db.runCommand(\"ping\").ok'", "mongo:27017/test", "--quiet" ]
+      timeout: 45s
+      interval: 3s
+      retries: 30
+    networks:
+      - calendar_net
+    volumes:
+      - mongo_data:/data/db
+  redis:
+    container_name: calendar_redis
+    image: redis:6.0-alpine3.15
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli" ,"ping" ]
+      timeout: 1s
+      interval: 3s
+      retries: 10
+    networks:
+      - calendar_net
+    volumes:
+      - redis_data:/data
+  account:
+    container_name: calendar_account-svc
+    build:
+      context: .
+      dockerfile: s_account.Dockerfile
+    restart: "on-failure"
+    ports:
+      - "8083:8083"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "./grpc-health-probe" , "-addr=account:8083", "&&", "exit", "1" ]
+      timeout: 30s
+      interval: 3s
+      retries: 15
+    networks:
+      - calendar_net
+  calendar:
+    container_name: calendar_calendar-svc
+    build:
+      context: .
+      dockerfile: s_calendar.Dockerfile
+    restart: "on-failure"
+    ports:
+      - "8082:8082"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "./grpc-health-probe" , "-addr=calendar:8082" ]
+      timeout: 30s
+      interval: 3s
+      retries: 15
+    networks:
+      - calendar_net
+  web-api:
+    container_name: calendar_web-api-svc
+    build:
+      context: .
+      dockerfile: s_web-api.Dockerfile
+    restart: "on-failure"
+    ports:
+      - "8081:8081"
+    depends_on:
+      calendar:
+        condition: service_healthy
+      account:
+        condition: service_healthy
+    networks:
+      - calendar_net
+  frontend:
+    container_name: calendar_frontend
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: "on-failure"
+    ports:
+      - "8080:80"
+    depends_on:
+      - web-api
+    networks:
+      - calendar_net
+  grafana:
+    image: grafana/grafana:latest
+    container_name: calendar_grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: calendar_prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - web-api
+networks:
+  calendar_net:
+    driver: bridge
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
+  grafana-storage:
+  prometheus_data:
+

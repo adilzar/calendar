@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package calendar;
+option go_package = "./;pb";
+
+service Calendar {
+  rpc CreateEvent(CreateEventRequest) returns (CreateEventReply) {}
+
+  rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventReply) {}
+
+  rpc ListEvent(ListEventRequest) returns (ListEventReply) {}
+
+  rpc ServiceStatus(ServiceStatusRequest) returns (ServiceStatusReply) {}
+}
+
+message Event {
+  string id = 1;
+  uint64 userId = 2;
+  string name = 3;
+  string details = 4;
+  google.protobuf.Timestamp start = 5;
+  google.protobuf.Timestamp end = 6;
+  string color = 7;
+}
+
+message CreateEventRequest {
+  Event event = 1;
+}
+
+message CreateEventReply {
+  string eventId = 1;
+  string err = 2;
+}
+
+message DeleteEventRequest {
+  string eventId = 1;
+  uint64 userId = 2;
+}
+
+message DeleteEventReply {
+  string err = 1;
+}
+
+message ListEventRequest {
+  uint64 userId = 1;
+}
+
+message ListEventReply {
+  repeated Event events = 1;
+  string err = 2;
+}
+
+message ServiceStatusRequest {}
+
+message ServiceStatusReply {
+  int32 code = 1;
+  string err = 2;
+}

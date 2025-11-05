@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package account;
+option go_package = "./;pb";
+
+service Account {
+  rpc IsAuth(IsAuthRequest) returns (IsAuthReply) {}
+
+  rpc SignUp(SignUpRequest) returns (SignUpReply) {}
+
+  rpc Login(LoginRequest) returns (LoginReply) {}
+
+  rpc Logout(LogoutRequest) returns (LogoutReply) {}
+
+  rpc ServiceStatus (ServiceStatusRequest) returns (ServiceStatusReply) {}
+}
+
+message User{
+  string email = 2;
+  string password = 3;
+}
+
+message Token{
+  string plaintText = 1;
+  bytes hash = 2;
+  uint64  userId = 3;
+  google.protobuf.Timestamp expiry = 4;
+  string scope = 5;
+}
+
+message IsAuthRequest{
+ Token token = 1;
+}
+
+message IsAuthReply{
+  Token token = 1;
+ string err = 2;
+}
+
+message SignUpRequest{
+  User user = 1;
+}
+
+message SignUpReply{
+  uint64 userId = 1;
+  Token token = 2;
+  string err = 3;
+}
+
+message LoginRequest{
+  User user = 1;
+}
+
+message LoginReply{
+  uint64 userId = 1;
+  Token token = 2;
+  string err = 3;
+}
+
+message LogoutRequest{
+  Token token = 1;
+}
+
+message LogoutReply{
+  string err= 2;
+}
+
+message ServiceStatusRequest {}
+
+message ServiceStatusReply {
+  int32 code = 1;
+  string err = 2;
+}

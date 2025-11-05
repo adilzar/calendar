@@ -1,0 +1,49 @@
+calendar_service:
+  db_user: "calendar"
+  db_pass: "example"
+#  db_host: "localhost" # use without docker
+  db_host: "mongodb" # use with docker
+  db_port: 27017
+  db_name:  "calendar"
+#  db_uri: "mongodb://root:example@localhost:27017/events?retryWrites=true&w=majority&authSource=admin" # use without docker
+  db_uri: "mongodb://root:example@mongo:27017/events?retryWrites=true&w=majority&authSource=admin" # use with docker
+  db_max_open_conns: 30
+  db_max_idle_conns: 30
+  db_max_idle_time: "15m"
+  db_ssl_mode: "disable"
+  grpc_port: "8082"
+#  grpc_host: "localhost" # use without docker
+  grpc_host: "calendar" # use with docker
+
+account_service:
+  db_user: "calendar"
+  db_pass: "example"
+#  db_host: "localhost" # use without docker
+  db_host: "mysql" # use with docker
+  db_port: 3306
+  db_name:  "account"
+  db_dsn: "calendar:example@tcp(mysql:3306)/account" # use with docker
+#  db_dsn: "calendar:example@/account" # use without docker
+  db_max_open_conns: 30
+  db_max_idle_conns: 30
+  db_max_idle_time: "15m"
+  db_ssl_mode: "disable"
+#  redis_url: "127.0.0.1:6379" # use without docker
+  redis_url: "redis:6379" # use with docker
+  redis_pass: ""
+  grpc_port: "8083"
+#  grpc_host: "localhost" # use without docker
+  grpc_host: "account" # use with docker
+
+web_api_service:
+  calendar_service_port: "8082"
+  calendar_service_host: "calendar" # use with docker
+#  calendar_service_host: "localhost" # use without docker
+  account_service_port: "8083"
+  account_service_host: "account" # use with docker
+#  account_service_host: "localhost" # use without docker
+  http_port: "8081"
+  http_host: "0.0.0.0" # use with docker
+#  http_host: "localhost" # use without docker
+
+
